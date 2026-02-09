@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { MapPin, Calendar, ExternalLink, ShieldCheck, ChevronRight } from 'lucide-react';
+import { MapPin, Calendar, Bookmark, ShieldCheck, ChevronRight } from 'lucide-react';
 import { Opportunity } from '../types';
 
 interface OpportunityCardProps {
@@ -35,7 +35,7 @@ const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity, onAnalyz
           onClick={() => onSave(opportunity)}
           className={`p-2 rounded-full border transition-colors ${isSaved ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-slate-200 text-slate-400 hover:text-blue-600'}`}
         >
-          <ExternalLink size={18} />
+          <Bookmark size={18} />
         </button>
       </div>
 

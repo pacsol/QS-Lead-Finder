@@ -39,12 +39,13 @@ const App: React.FC = () => {
   const [location, setLocation] = useState('Manchester');
   const [sector, setSector] = useState('Commercial');
   const [hasGeminiKey, setHasGeminiKey] = useState<boolean | null>(null);
-  const [searchSources, setSearchSources] = useState<any[]>([]);
+  const [searchSources, setSearchSources] = useState<Array<{ web?: { uri: string; title?: string } }>>([]);
   const [activeProvider, setActiveProvider] = useState<AIProvider>('gemini');
   
   const [selectedLead, setSelectedLead] = useState<Opportunity | null>(null);
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   useEffect(() => {
     checkKeyStatus();
@@ -69,6 +70,7 @@ const App: React.FC = () => {
 
   const handleSearch = async () => {
     setIsLoading(true);
+    setSearchError(null);
     try {
       const results = await findOpportunities(location, sector);
       setSearchSources(results.sources || []);
@@ -76,6 +78,7 @@ const App: React.FC = () => {
       setOpportunities(parsedLeads);
     } catch (error) {
       console.error("Search failed:", error);
+      setSearchError(error instanceof Error ? error.message : "Search failed. Please check your API key and try again.");
     } finally {
       setIsLoading(false);
     }
@@ -84,6 +87,7 @@ const App: React.FC = () => {
   const handleAnalyze = async (opp: Opportunity) => {
     setSelectedLead(opp);
     setIsAnalyzing(true);
+    setAnalysis(null);
     try {
       const result = await analyzeLead(opp);
       setAnalysis(result);
@@ -432,6 +436,16 @@ const App: React.FC = () => {
               </div>
             )}
 
+            {searchError && (
+              <div className="bg-red-50 border border-red-200 rounded-2xl p-6 flex items-start gap-3 mb-6">
+                <XCircle size={20} className="text-red-500 mt-0.5 shrink-0" />
+                <div>
+                  <h4 className="text-sm font-bold text-red-800">Search Failed</h4>
+                  <p className="text-sm text-red-600 mt-1">{searchError}</p>
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {isLoading ? (
                 Array(6).fill(0).map((_, i) => (
@@ -439,15 +453,15 @@ const App: React.FC = () => {
                 ))
               ) : opportunities.length > 0 ? (
                 opportunities.map((opp) => (
-                  <OpportunityCard 
-                    key={opp.id} 
-                    opportunity={opp} 
-                    onAnalyze={handleAnalyze} 
+                  <OpportunityCard
+                    key={opp.id}
+                    opportunity={opp}
+                    onAnalyze={handleAnalyze}
                     onSave={toggleSave}
                     isSaved={!!savedLeads.find(i => i.id === opp.id)}
                   />
                 ))
-              ) : (
+              ) : !searchError ? (
                 <div className="col-span-full py-20 text-center">
                    <div className="mx-auto w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4 text-slate-400">
                      <SearchIcon size={32} />
@@ -455,7 +469,7 @@ const App: React.FC = () => {
                    <h3 className="text-lg font-bold text-slate-900">No projects found for {location}</h3>
                    <p className="text-slate-500">Try expanding your search radius or changing the sector.</p>
                 </div>
-              )}
+              ) : null}
             </div>
           </div>
         )}
