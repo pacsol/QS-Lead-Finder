@@ -1,0 +1,7 @@
+{
+  "name": "QS Lead finder UK",
+  "description": "A lead generation and market intelligence platform for self-employed Quantity Surveyors in the UK, powered by Gemini Search and Maps grounding.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}

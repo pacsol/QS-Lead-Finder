@@ -1,0 +1,96 @@
+{
+  "project": "QS Nexus - Outreach Assets & Data Persistence",
+  "branchName": "feature/outreach-assets-and-persistence",
+  "description": "Extend QS Nexus with AI-powered outreach asset generation (email sequences, proposals, marketing one-pagers) via Google Gemini and add Supabase persistence so leads, watchlists, and generated assets survive page refresh. All assets are editable inline with copy/export functionality.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Foundation: Outreach types, Supabase client, and database schema",
+      "description": "As a developer, I want the TypeScript types for outreach assets and a configured Supabase client with database schema, so that all downstream stories have a stable foundation to build on.",
+      "acceptanceCriteria": [
+        "New TypeScript types exported from types.ts: EmailStep (subject, body, sendDelay, callToAction), EmailSequence (steps: EmailStep[], opportunityId), Proposal (executiveSummary, scopeOfServices, methodology, timeline, feeStructure, qualifications), OnePager (headline, servicesList, differentiators, recentProjects, contactCTA), OutreachAsset (id, opportunityId, assetType, content, createdAt, updatedAt), and AssetType type ('email_sequence' | 'proposal' | 'one_pager')",
+        "services/supabaseClient.ts exports a configured Supabase client instance using process.env.SUPABASE_URL and process.env.SUPABASE_ANON_KEY environment variables, following the same process.env pattern used in geminiService.ts",
+        "supabase/schema.sql defines three tables: opportunities (id uuid PK default gen_random_uuid(), title text, location text, description text, estimated_value text, stage text, source text, url text, discovered_at timestamptz, created_at timestamptz default now()), watchlist_items (id uuid PK default gen_random_uuid(), opportunity_id uuid references opportunities(id), created_at timestamptz default now()), outreach_assets (id uuid PK default gen_random_uuid(), opportunity_id uuid references opportunities(id), asset_type text not null, content jsonb not null, created_at timestamptz default now(), updated_at timestamptz default now())",
+        "@supabase/supabase-js is added to package.json dependencies and the application compiles without TypeScript errors"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": "Zero-UI story. Creates the type system and infrastructure every other story depends on. The schema.sql is a reference file for the user to run in the Supabase dashboard SQL editor. Use process.env (matching existing geminiService.ts pattern) for environment variables."
+    },
+    {
+      "id": "US-002",
+      "title": "Persist leads and watchlist to Supabase",
+      "description": "As a quantity surveyor, I want my discovered leads and watchlist to be saved to a database, so that I don't lose my research when I close or refresh the browser.",
+      "acceptanceCriteria": [
+        "services/supabaseService.ts exports CRUD functions: saveOpportunities(opps: Opportunity[]), getOpportunities(): Promise<Opportunity[]>, addToWatchlist(opportunityId: string), removeFromWatchlist(opportunityId: string), getWatchlist(): Promise<Opportunity[]>",
+        "On app mount (useEffect in App.tsx), saved watchlist items are loaded from Supabase and populated into the savedLeads state",
+        "The toggleSave function in App.tsx calls addToWatchlist or removeFromWatchlist in Supabase, and the watchlist persists across full page refreshes",
+        "Supabase provider card in the Settings view shows status 'connected' (green badge) when valid Supabase credentials are detected, and 'disconnected' otherwise",
+        "If Supabase is not configured (missing env vars), the app falls back to in-memory state with no errors or crashes -- all existing functionality is preserved"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": "Depends on US-001. The graceful fallback is critical -- users without Supabase must not see errors. Use a simple isSupabaseConfigured() check in supabaseClient.ts that returns false when env vars are missing. Wrap all Supabase calls in try/catch."
+    },
+    {
+      "id": "US-003",
+      "title": "AI outreach asset generation service via Gemini",
+      "description": "As a quantity surveyor, I want the system to generate tailored email sequences, proposals, and marketing one-pagers for a specific project lead using AI, so that I can quickly create professional outreach materials.",
+      "acceptanceCriteria": [
+        "services/outreachService.ts exports three async functions: generateEmailSequence(opp: Opportunity): Promise<EmailSequence>, generateProposal(opp: Opportunity): Promise<Proposal>, generateOnePager(opp: Opportunity): Promise<OnePager>",
+        "generateEmailSequence returns 3-5 EmailSteps with subject lines, body text, suggested send delays (e.g. 'Day 1', 'Day 3'), and a call-to-action per step, all tailored to the opportunity's title, location, sector, and stage",
+        "generateProposal returns structured sections (executiveSummary, scopeOfServices, methodology, timeline, feeStructure, qualifications) written as a professional UK QS proposal referencing NRM/RICS standards where appropriate",
+        "generateOnePager returns a concise capability statement with headline, services list, differentiators, recent project examples, and a contact CTA suitable for a self-employed QS",
+        "All three functions use Gemini structured JSON output (responseMimeType: 'application/json' with responseSchema using Type constants from @google/genai) following the exact same pattern as analyzeLead in geminiService.ts"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": "Depends on US-001 types only. Service-layer-only story with no UI. Follow the Gemini SDK pattern from geminiService.ts: new GoogleGenAI({ apiKey: process.env.API_KEY }), Type.OBJECT/Type.STRING for schemas, try/catch with JSON.parse on response.text. Use gemini-3-flash-preview for email sequences and one-pagers (speed), gemini-3-pro-preview for proposals (quality)."
+    },
+    {
+      "id": "US-004",
+      "title": "Outreach panel UI component with tab navigation",
+      "description": "As a quantity surveyor, I want a panel where I can select and generate different outreach asset types for a lead, so that I can create the specific materials I need for my business development.",
+      "acceptanceCriteria": [
+        "components/OutreachPanel.tsx renders as a full-screen modal overlay matching the AnalysisModal pattern (fixed inset-0 z-50, bg-slate-900/60 backdrop-blur-sm backdrop, bg-white rounded-3xl content card) and receives an Opportunity and onClose callback as props",
+        "Three-tab navigation bar (Email Sequence, Proposal, One-Pager) with clear visual active state using existing design tokens (blue-600 for active tab, slate for inactive)",
+        "Each tab displays a 'Generate' button that calls the corresponding function from outreachService.ts and shows a loading spinner with contextual message during generation (matching the AnalysisModal loading pattern with animate-spin border circle)",
+        "Generated content renders in a structured, readable layout: email sequences show numbered steps with subject/body/CTA fields, proposals show labeled sections, one-pagers show a formatted capability statement",
+        "Panel includes a close button (X icon) in the header and can be dismissed by clicking the backdrop overlay"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": "Depends on US-001 and US-003. No persistence yet -- generated content lives in component state only. Use AnalysisModal.tsx as the structural reference (lines 15-17 for overlay, 18-31 for header, 33-88 for content area, 91-98 for footer). Import lucide icons: FileText, Mail, FileSpreadsheet for the tab icons."
+    },
+    {
+      "id": "US-005",
+      "title": "Inline editing with copy and export for generated assets",
+      "description": "As a quantity surveyor, I want to edit the AI-generated outreach content inline, copy it to my clipboard, and export it as a file, so that I can customize the materials and use them in my actual outreach workflow.",
+      "acceptanceCriteria": [
+        "components/EditableAsset.tsx provides a view/edit toggle: clicking 'Edit' switches content sections to editable textarea elements styled with the app's Tailwind design tokens (rounded-xl, border-slate-200, focus:ring-2 focus:ring-blue-500/20), and 'Save' returns to read-only view with changes preserved in component state",
+        "'Copy to Clipboard' button copies the full rendered asset text to the system clipboard using navigator.clipboard.writeText and shows brief inline success feedback (button text changes to 'Copied!' with a CheckCircle2 icon for 2 seconds, then reverts)",
+        "'Export' button triggers a browser file download of the asset content as a .txt file with a descriptive filename pattern (e.g. 'email-sequence-manchester-commercial.txt') using Blob and a temporary anchor element",
+        "EditableAsset is integrated into OutreachPanel.tsx, wrapping the generated content display for all three asset types (email sequences, proposals, one-pagers)",
+        "Copy and Export buttons appear in a toolbar row at the top of the content area, visible in both view and edit modes, styled as small icon+text buttons matching the app's button patterns"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "Depends on US-004. Edits are session-only at this point -- Supabase persistence comes in US-006. For the Clipboard API, handle the rejection case gracefully (some browsers block clipboard in non-HTTPS contexts). For export, create new Blob([text], { type: 'text/plain' }) and use URL.createObjectURL with a temporary <a> element."
+    },
+    {
+      "id": "US-006",
+      "title": "Persist generated assets and integrate outreach into the lead workflow",
+      "description": "As a quantity surveyor, I want my generated and edited outreach assets to be saved to the database and accessible from any lead card, so that I can build up a library of outreach materials over time without losing my work.",
+      "acceptanceCriteria": [
+        "supabaseService.ts extended with four new functions: saveOutreachAsset(opportunityId: string, assetType: AssetType, content: object): Promise<OutreachAsset>, getOutreachAssets(opportunityId: string): Promise<OutreachAsset[]>, updateOutreachAsset(assetId: string, content: object): Promise<void>, deleteOutreachAsset(assetId: string): Promise<void>",
+        "OpportunityCard.tsx includes a new 'Outreach' button (using the FileText lucide icon) in the button row next to 'AI Analysis', with an onOutreach callback prop following the same pattern as the existing onAnalyze prop",
+        "When OutreachPanel opens for a lead that has previously generated assets, those assets load from Supabase and display immediately in the correct tabs without requiring re-generation",
+        "Clicking 'Save' in edit mode within EditableAsset persists the updated content to Supabase via updateOutreachAsset, and newly generated assets are automatically saved to Supabase after generation completes",
+        "Generated assets persist across page refreshes and remain associated with their source opportunity -- if Supabase is not configured, assets remain in-memory only with no errors (same fallback pattern as US-002)"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": "Final integration story. Depends on US-002 (Supabase service pattern) and US-005 (complete UI). Add outreach-related state to App.tsx: outreachLead (Opportunity | null) for which lead's outreach panel is open. Wire the onOutreach callback through from App.tsx to OpportunityCard, same as handleAnalyze pattern at App.tsx lines 84-95."
+    }
+  ]
+}
