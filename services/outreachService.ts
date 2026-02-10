@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { Opportunity, EmailSequence, Proposal, OnePager } from "../types";
+import { Opportunity, EmailSequence, Proposal, OnePager, ProposalSectionKey } from "../types";
 
 export const generateEmailSequence = async (opp: Opportunity): Promise<EmailSequence> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -78,6 +78,49 @@ Generate a comprehensive proposal with all sections. Be specific to this project
     return JSON.parse(response.text || "{}");
   } catch (e) {
     throw new Error("Failed to parse proposal response");
+  }
+};
+
+export const generateCustomProposal = async (
+  opp: Opportunity,
+  selectedSections: ProposalSectionKey[]
+): Promise<Record<string, string>> => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+  const sectionNames = selectedSections.join(', ');
+  const prompt = `You are a senior quantity surveyor preparing a professional fee proposal for:
+
+Title: ${opp.title}
+Location: ${opp.location}
+Description: ${opp.description}
+Stage: ${opp.stage}
+Estimated Value: ${opp.estimatedValue || 'Unknown'}
+
+Generate the following proposal sections: ${sectionNames}.
+Be specific to this project, reference UK construction standards (NRM, JCT, NEC), and position the QS consultancy as experienced and capable. Each section should be detailed and professional.`;
+
+  const properties: Record<string, { type: any }> = {};
+  for (const key of selectedSections) {
+    properties[key] = { type: Type.STRING };
+  }
+
+  const response = await ai.models.generateContent({
+    model: "gemini-3-pro-preview",
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties,
+        required: selectedSections as string[],
+      },
+    },
+  });
+
+  try {
+    return JSON.parse(response.text || "{}");
+  } catch (e) {
+    throw new Error("Failed to parse custom proposal response");
   }
 };
 

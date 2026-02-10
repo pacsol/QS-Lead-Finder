@@ -1,5 +1,5 @@
 import { supabase, isSupabaseConfigured } from './supabaseClient';
-import { Opportunity, OutreachAsset, AssetType } from '../types';
+import { Opportunity, OutreachAsset, AssetType, SavedProposal } from '../types';
 
 // --- Opportunities ---
 
@@ -178,5 +178,71 @@ export const deleteOutreachAsset = async (assetId: string): Promise<void> => {
       .eq('id', assetId);
   } catch (e) {
     console.error('Failed to delete outreach asset:', e);
+  }
+};
+
+// --- Proposals ---
+
+export const saveProposal = async (proposal: SavedProposal): Promise<void> => {
+  if (!isSupabaseConfigured() || !supabase) return;
+  try {
+    await supabase.from('proposals').upsert({
+      id: proposal.id,
+      opportunity_id: proposal.opportunityId,
+      opportunity_title: proposal.opportunityTitle,
+      sections: proposal.sections,
+      content: proposal.content,
+      created_at: proposal.createdAt,
+      updated_at: proposal.updatedAt,
+    }, { onConflict: 'id' });
+  } catch (e) {
+    console.error('Failed to save proposal:', e);
+  }
+};
+
+export const getProposals = async (): Promise<SavedProposal[]> => {
+  if (!isSupabaseConfigured() || !supabase) return [];
+  try {
+    const { data, error } = await supabase
+      .from('proposals')
+      .select('*')
+      .order('updated_at', { ascending: false });
+    if (error) throw error;
+    return (data || []).map(row => ({
+      id: row.id,
+      opportunityId: row.opportunity_id,
+      opportunityTitle: row.opportunity_title,
+      sections: row.sections,
+      content: row.content,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    }));
+  } catch (e) {
+    console.error('Failed to fetch proposals:', e);
+    return [];
+  }
+};
+
+export const updateProposal = async (id: string, content: any): Promise<void> => {
+  if (!isSupabaseConfigured() || !supabase) return;
+  try {
+    await supabase
+      .from('proposals')
+      .update({ content, updated_at: new Date().toISOString() })
+      .eq('id', id);
+  } catch (e) {
+    console.error('Failed to update proposal:', e);
+  }
+};
+
+export const deleteProposal = async (id: string): Promise<void> => {
+  if (!isSupabaseConfigured() || !supabase) return;
+  try {
+    await supabase
+      .from('proposals')
+      .delete()
+      .eq('id', id);
+  } catch (e) {
+    console.error('Failed to delete proposal:', e);
   }
 };

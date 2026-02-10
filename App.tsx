@@ -11,22 +11,12 @@ import Sidebar from './components/Sidebar';
 import OpportunityCard from './components/OpportunityCard';
 import AnalysisModal from './components/AnalysisModal';
 import OutreachPanel from './components/OutreachPanel';
+import ProposalGenerator from './components/ProposalGenerator';
 import LoginPage from './components/LoginPage';
 import { Opportunity, AnalysisResult, ViewMode, AIProvider, ProviderConfig } from './types';
 import { findOpportunities, parseOpportunities, analyzeLead } from './services/geminiService';
 import { isSupabaseConfigured, supabase } from './services/supabaseClient';
 import { getWatchlist, addToWatchlist, removeFromWatchlist, saveOpportunities } from './services/supabaseService';
-import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
-
-const MOCK_TRENDS = [
-  { month: 'Jan', volume: 45, value: 120 },
-  { month: 'Feb', volume: 52, value: 145 },
-  { month: 'Mar', volume: 48, value: 130 },
-  { month: 'Apr', volume: 61, value: 180 },
-  { month: 'May', volume: 55, value: 165 },
-  { month: 'Jun', volume: 67, value: 210 },
-];
-
 
 const App: React.FC = () => {
   const [view, setView] = useState<ViewMode>(ViewMode.DASHBOARD);
@@ -194,32 +184,6 @@ const App: React.FC = () => {
           </div>
           <h4 className="text-slate-500 text-sm font-medium">AI Reliability</h4>
           <p className="text-3xl font-bold text-slate-900 mt-1">High</p>
-        </div>
-      </div>
-
-      <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h3 className="text-xl font-bold text-slate-900">Regional Construction Index</h3>
-            <p className="text-sm text-slate-500">Live activity based on active planning portals</p>
-          </div>
-        </div>
-        <div className="h-[300px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={MOCK_TRENDS}>
-              <defs>
-                <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/>
-                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-              <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} dy={10} />
-              <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
-              <Tooltip contentStyle={{borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)'}} />
-              <Area type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" />
-            </AreaChart>
-          </ResponsiveContainer>
         </div>
       </div>
 
@@ -534,16 +498,7 @@ const App: React.FC = () => {
         )}
 
         {view === ViewMode.PROPOSALS && (
-          <div className="flex items-center justify-center py-32 animate-in fade-in duration-500">
-            <div className="text-center">
-              <div className="mx-auto w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-6 text-blue-500">
-                <FileText size={40} />
-              </div>
-              <h3 className="text-2xl font-bold text-slate-900 mb-2">Proposal Generator</h3>
-              <p className="text-slate-500 max-w-md">AI-powered proposal generation tailored to each opportunity. Create professional, data-driven proposals in minutes.</p>
-              <span className="inline-block mt-6 text-xs font-bold text-blue-600 bg-blue-50 px-4 py-2 rounded-full uppercase tracking-widest">Coming Soon</span>
-            </div>
-          </div>
+          <ProposalGenerator opportunities={opportunities} savedLeads={savedLeads} />
         )}
 
         {view === ViewMode.CRM && (

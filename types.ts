@@ -93,3 +93,31 @@ export interface OutreachAsset {
   createdAt: string;
   updatedAt: string;
 }
+
+export type ProposalSectionKey =
+  | 'executiveSummary' | 'scopeOfServices' | 'methodology'
+  | 'timeline' | 'feeStructure' | 'qualifications'
+  | 'coverLetter' | 'termsAndConditions' | 'caseStudies' | 'teamBios';
+
+export interface SavedProposal {
+  id: string;
+  opportunityId: string;
+  opportunityTitle: string;
+  sections: ProposalSectionKey[];
+  content: Record<ProposalSectionKey, string>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const PROPOSAL_SECTIONS: { key: ProposalSectionKey; label: string }[] = [
+  { key: 'coverLetter', label: 'Cover Letter' },
+  { key: 'executiveSummary', label: 'Executive Summary' },
+  { key: 'scopeOfServices', label: 'Scope of Services' },
+  { key: 'methodology', label: 'Methodology' },
+  { key: 'timeline', label: 'Timeline' },
+  { key: 'feeStructure', label: 'Fee Structure' },
+  { key: 'qualifications', label: 'Qualifications' },
+  { key: 'caseStudies', label: 'Case Studies' },
+  { key: 'teamBios', label: 'Team Bios' },
+  { key: 'termsAndConditions', label: 'Terms & Conditions' },
+];

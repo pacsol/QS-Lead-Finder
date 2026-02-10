@@ -28,3 +28,13 @@ create table if not exists outreach_assets (
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
+
+create table if not exists proposals (
+  id uuid primary key default gen_random_uuid(),
+  opportunity_id text not null,
+  opportunity_title text not null,
+  sections jsonb not null,
+  content jsonb not null,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
