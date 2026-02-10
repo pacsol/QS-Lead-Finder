@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { LayoutDashboard, Search, Bookmark, Settings, Building2 } from 'lucide-react';
+import { LayoutDashboard, Search, Bookmark, Settings, Building2, FileText, Users, Mail } from 'lucide-react';
 import { ViewMode } from '../types';
 
 interface SidebarProps {
@@ -12,6 +12,9 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
   const menuItems = [
     { id: ViewMode.DASHBOARD, icon: LayoutDashboard, label: 'Dashboard' },
     { id: ViewMode.SEARCH, icon: Search, label: 'Lead Finder' },
+    { id: ViewMode.PROPOSALS, icon: FileText, label: 'Proposal Generator' },
+    { id: ViewMode.CRM, icon: Users, label: 'CRM' },
+    { id: ViewMode.EMAIL_SEQUENCES, icon: Mail, label: 'Email Sequences' },
     { id: ViewMode.SAVED, icon: Bookmark, label: 'Watchlist' },
     { id: ViewMode.SETTINGS, icon: Settings, label: 'Preferences' },
   ];
@@ -22,7 +25,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
         <div className="bg-blue-600 p-2 rounded-lg">
           <Building2 size={24} />
         </div>
-        <h1 className="text-xl font-bold tracking-tight">QS Nexus</h1>
+        <h1 className="text-xl font-bold tracking-tight">QS Marketing Hub</h1>
       </div>
       
       <nav className="flex-1 p-4 space-y-2 mt-4">

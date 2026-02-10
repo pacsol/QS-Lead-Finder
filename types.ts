@@ -30,6 +30,9 @@ export interface AnalysisResult {
 export enum ViewMode {
   DASHBOARD = 'dashboard',
   SEARCH = 'search',
+  PROPOSALS = 'proposals',
+  CRM = 'crm',
+  EMAIL_SEQUENCES = 'email_sequences',
   SAVED = 'saved',
   SETTINGS = 'settings'
 }

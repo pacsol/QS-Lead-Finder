@@ -1,18 +1,20 @@
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Search as SearchIcon, MapPin, TrendingUp, Bell, Filter, Grid, 
-  List as ListIcon, Lightbulb, Key, ShieldCheck, Database as DbIcon, 
-  ExternalLink, CheckCircle2, XCircle, Globe, Cpu, Zap, Bookmark, 
-  Github, Code, Package, Terminal, Database, FileSearch, HardDrive
+import {
+  Search as SearchIcon, MapPin, TrendingUp, Bell, Filter, Grid,
+  List as ListIcon, Lightbulb, Key, ShieldCheck, Database as DbIcon,
+  ExternalLink, CheckCircle2, XCircle, Globe, Cpu, Zap, Bookmark,
+  Github, Database, FileSearch, HardDrive, LogOut, FileText, Users, Mail
 } from 'lucide-react';
+import { Session } from '@supabase/supabase-js';
 import Sidebar from './components/Sidebar';
 import OpportunityCard from './components/OpportunityCard';
 import AnalysisModal from './components/AnalysisModal';
 import OutreachPanel from './components/OutreachPanel';
-import { Opportunity, AnalysisResult, ViewMode, AIProvider, ProviderConfig, ExternalTool } from './types';
+import LoginPage from './components/LoginPage';
+import { Opportunity, AnalysisResult, ViewMode, AIProvider, ProviderConfig } from './types';
 import { findOpportunities, parseOpportunities, analyzeLead } from './services/geminiService';
-import { isSupabaseConfigured } from './services/supabaseClient';
+import { isSupabaseConfigured, supabase } from './services/supabaseClient';
 import { getWatchlist, addToWatchlist, removeFromWatchlist, saveOpportunities } from './services/supabaseService';
 import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
 
@@ -25,14 +27,6 @@ const MOCK_TRENDS = [
   { month: 'Jun', volume: 67, value: 210 },
 ];
 
-const EXTERNAL_TOOLS: ExternalTool[] = [
-  { 
-    name: 'Ralph', 
-    url: 'https://github.com/snarktank/ralph', 
-    description: 'An open-source construction estimation and document processing engine.',
-    category: 'Estimation'
-  }
-];
 
 const App: React.FC = () => {
   const [view, setView] = useState<ViewMode>(ViewMode.DASHBOARD);
@@ -44,12 +38,30 @@ const App: React.FC = () => {
   const [hasGeminiKey, setHasGeminiKey] = useState<boolean | null>(null);
   const [searchSources, setSearchSources] = useState<Array<{ web?: { uri: string; title?: string } }>>([]);
   const [activeProvider, setActiveProvider] = useState<AIProvider>('gemini');
-  
+
   const [selectedLead, setSelectedLead] = useState<Opportunity | null>(null);
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [outreachLead, setOutreachLead] = useState<Opportunity | null>(null);
+
+  const [session, setSession] = useState<Session | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured() || !supabase) {
+      setAuthLoading(false);
+      return;
+    }
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setAuthLoading(false);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     checkKeyStatus();
@@ -135,6 +147,12 @@ const App: React.FC = () => {
     setOutreachLead(opp);
   };
 
+  const handleSignOut = async () => {
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
+  };
+
   const providers: ProviderConfig[] = [
     { id: 'gemini', name: 'Google Gemini', status: hasGeminiKey ? 'connected' : 'disconnected', description: 'Supports Search & Maps Grounding. Recommended for Lead Discovery.', type: 'intelligence' },
     { id: 'ralph', name: 'Ralph (OS)', status: 'connected', description: 'Integration with snarktank/ralph for specialized QS document processing.', type: 'tool' },
@@ -179,78 +197,29 @@ const App: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h3 className="text-xl font-bold text-slate-900">Regional Construction Index</h3>
-              <p className="text-sm text-slate-500">Live activity based on active planning portals</p>
-            </div>
-          </div>
-          <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={MOCK_TRENDS}>
-                <defs>
-                  <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/>
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
-                <Tooltip contentStyle={{borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)'}} />
-                <Area type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" />
-              </AreaChart>
-            </ResponsiveContainer>
+      <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h3 className="text-xl font-bold text-slate-900">Regional Construction Index</h3>
+            <p className="text-sm text-slate-500">Live activity based on active planning portals</p>
           </div>
         </div>
-
-        <div className="bg-slate-900 rounded-3xl p-8 text-white shadow-xl shadow-slate-900/20 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-700">
-            <Package size={120} />
-          </div>
-          <div className="relative z-10">
-            <div className="flex items-center gap-2 mb-6">
-              <Github size={20} className="text-blue-400" />
-              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Featured Tool</span>
-            </div>
-            <h3 className="text-2xl font-bold mb-4">Ralph Integration</h3>
-            <p className="text-slate-400 text-sm leading-relaxed mb-8">
-              Utilize the power of <span className="text-white font-medium">snarktank/ralph</span> for open-source estimation processing directly within QS Nexus.
-            </p>
-            
-            <div className="space-y-4 mb-8">
-              {EXTERNAL_TOOLS.map((tool, idx) => (
-                <a 
-                  key={idx} 
-                  href={tool.url} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-500/20 text-blue-400 rounded-lg">
-                      <Terminal size={18} />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold">{tool.name}</p>
-                      <p className="text-[10px] text-slate-500">{tool.category}</p>
-                    </div>
-                  </div>
-                  <ExternalLink size={16} className="text-slate-500" />
-                </a>
-              ))}
-            </div>
-
-            <button 
-              onClick={() => setView(ViewMode.SETTINGS)}
-              className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2"
-            >
-              <Code size={18} />
-              Configure Pipeline
-            </button>
-          </div>
+        <div className="h-[300px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={MOCK_TRENDS}>
+              <defs>
+                <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/>
+                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+              <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} dy={10} />
+              <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
+              <Tooltip contentStyle={{borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)'}} />
+              <Area type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" />
+            </AreaChart>
+          </ResponsiveContainer>
         </div>
       </div>
 
@@ -370,6 +339,18 @@ const App: React.FC = () => {
     </div>
   );
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (isSupabaseConfigured() && !session) {
+    return <LoginPage />;
+  }
+
   return (
     <div className="min-h-screen flex bg-slate-50">
       <Sidebar currentView={view} setView={setView} />
@@ -380,12 +361,18 @@ const App: React.FC = () => {
             <h2 className="text-2xl font-bold text-slate-900">
               {view === ViewMode.DASHBOARD && 'Executive Overview'}
               {view === ViewMode.SEARCH && 'Real-Time Lead Finder'}
+              {view === ViewMode.PROPOSALS && 'Proposal Generator'}
+              {view === ViewMode.CRM && 'Client Relationship Manager'}
+              {view === ViewMode.EMAIL_SEQUENCES && 'Email Sequences'}
               {view === ViewMode.SAVED && 'Lead Watchlist'}
               {view === ViewMode.SETTINGS && 'System Configuration'}
             </h2>
             <p className="text-slate-500 text-sm">
-              {view === ViewMode.DASHBOARD && 'Welcome back, Alex. Here is your quantity surveying market update.'}
+              {view === ViewMode.DASHBOARD && `Welcome back, ${session?.user?.email || 'Alex'}. Here is your quantity surveying market update.`}
               {view === ViewMode.SEARCH && 'Scanning UK planning and tender portals for high-value opportunities.'}
+              {view === ViewMode.PROPOSALS && 'Generate tailored proposals for your construction opportunities.'}
+              {view === ViewMode.CRM && 'Manage your client relationships and track engagement.'}
+              {view === ViewMode.EMAIL_SEQUENCES && 'Create and manage automated email outreach campaigns.'}
               {view === ViewMode.SETTINGS && 'Adjust intelligence engines, databases, and connection settings.'}
             </p>
           </div>
@@ -402,7 +389,20 @@ const App: React.FC = () => {
               <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
             </button>
             <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
-              <img src="https://picsum.photos/seed/qs/100/100" alt="Profile" className="w-10 h-10 rounded-xl object-cover ring-2 ring-white shadow-sm" />
+              {session ? (
+                <>
+                  <span className="text-sm text-slate-600 font-medium hidden lg:block">{session.user.email}</span>
+                  <button
+                    onClick={handleSignOut}
+                    className="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
+                    title="Sign out"
+                  >
+                    <LogOut size={18} />
+                  </button>
+                </>
+              ) : (
+                <img src="https://picsum.photos/seed/qs/100/100" alt="Profile" className="w-10 h-10 rounded-xl object-cover ring-2 ring-white shadow-sm" />
+              )}
             </div>
           </div>
         </header>
@@ -529,6 +529,45 @@ const App: React.FC = () => {
                    <p className="text-slate-500">Click the share icon on a lead to save it for later review.</p>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {view === ViewMode.PROPOSALS && (
+          <div className="flex items-center justify-center py-32 animate-in fade-in duration-500">
+            <div className="text-center">
+              <div className="mx-auto w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-6 text-blue-500">
+                <FileText size={40} />
+              </div>
+              <h3 className="text-2xl font-bold text-slate-900 mb-2">Proposal Generator</h3>
+              <p className="text-slate-500 max-w-md">AI-powered proposal generation tailored to each opportunity. Create professional, data-driven proposals in minutes.</p>
+              <span className="inline-block mt-6 text-xs font-bold text-blue-600 bg-blue-50 px-4 py-2 rounded-full uppercase tracking-widest">Coming Soon</span>
+            </div>
+          </div>
+        )}
+
+        {view === ViewMode.CRM && (
+          <div className="flex items-center justify-center py-32 animate-in fade-in duration-500">
+            <div className="text-center">
+              <div className="mx-auto w-20 h-20 bg-purple-50 rounded-full flex items-center justify-center mb-6 text-purple-500">
+                <Users size={40} />
+              </div>
+              <h3 className="text-2xl font-bold text-slate-900 mb-2">Client Relationship Manager</h3>
+              <p className="text-slate-500 max-w-md">Track client interactions, manage contacts, and nurture relationships with a CRM built for quantity surveyors.</p>
+              <span className="inline-block mt-6 text-xs font-bold text-purple-600 bg-purple-50 px-4 py-2 rounded-full uppercase tracking-widest">Coming Soon</span>
+            </div>
+          </div>
+        )}
+
+        {view === ViewMode.EMAIL_SEQUENCES && (
+          <div className="flex items-center justify-center py-32 animate-in fade-in duration-500">
+            <div className="text-center">
+              <div className="mx-auto w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mb-6 text-amber-500">
+                <Mail size={40} />
+              </div>
+              <h3 className="text-2xl font-bold text-slate-900 mb-2">Email Sequences</h3>
+              <p className="text-slate-500 max-w-md">Design automated multi-step email campaigns to engage leads at scale with personalised outreach sequences.</p>
+              <span className="inline-block mt-6 text-xs font-bold text-amber-600 bg-amber-50 px-4 py-2 rounded-full uppercase tracking-widest">Coming Soon</span>
             </div>
           </div>
         )}
