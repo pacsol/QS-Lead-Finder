@@ -50,3 +50,43 @@ export interface ExternalTool {
   description: string;
   category: string;
 }
+
+export interface EmailStep {
+  subject: string;
+  body: string;
+  sendDelay: string;
+  callToAction: string;
+}
+
+export interface EmailSequence {
+  steps: EmailStep[];
+  opportunityId: string;
+}
+
+export interface Proposal {
+  executiveSummary: string;
+  scopeOfServices: string;
+  methodology: string;
+  timeline: string;
+  feeStructure: string;
+  qualifications: string;
+}
+
+export interface OnePager {
+  headline: string;
+  servicesList: string;
+  differentiators: string;
+  recentProjects: string;
+  contactCTA: string;
+}
+
+export type AssetType = 'email_sequence' | 'proposal' | 'one_pager';
+
+export interface OutreachAsset {
+  id: string;
+  opportunityId: string;
+  assetType: AssetType;
+  content: EmailSequence | Proposal | OnePager;
+  createdAt: string;
+  updatedAt: string;
+}

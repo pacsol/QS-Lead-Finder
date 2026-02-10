@@ -1,16 +1,17 @@
 
 import React from 'react';
-import { MapPin, Calendar, Bookmark, ShieldCheck, ChevronRight } from 'lucide-react';
+import { MapPin, Calendar, Bookmark, ShieldCheck, ChevronRight, FileText } from 'lucide-react';
 import { Opportunity } from '../types';
 
 interface OpportunityCardProps {
   opportunity: Opportunity;
   onAnalyze: (opp: Opportunity) => void;
   onSave: (opp: Opportunity) => void;
+  onOutreach?: (opp: Opportunity) => void;
   isSaved?: boolean;
 }
 
-const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity, onAnalyze, onSave, isSaved }) => {
+const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity, onAnalyze, onSave, onOutreach, isSaved }) => {
   const getStageColor = (stage: string) => {
     switch (stage) {
       case 'Planning': return 'bg-amber-100 text-amber-700 border-amber-200';
@@ -67,6 +68,15 @@ const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity, onAnalyz
           <ShieldCheck size={18} />
           AI Analysis
         </button>
+        {onOutreach && (
+          <button
+            onClick={() => onOutreach(opportunity)}
+            className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-xl font-medium hover:bg-blue-700 transition-colors"
+          >
+            <FileText size={18} />
+            Outreach
+          </button>
+        )}
         <button
           className="p-2.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
           onClick={() => window.open(opportunity.url || '#', '_blank')}

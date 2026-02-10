@@ -9,8 +9,11 @@ import {
 import Sidebar from './components/Sidebar';
 import OpportunityCard from './components/OpportunityCard';
 import AnalysisModal from './components/AnalysisModal';
+import OutreachPanel from './components/OutreachPanel';
 import { Opportunity, AnalysisResult, ViewMode, AIProvider, ProviderConfig, ExternalTool } from './types';
 import { findOpportunities, parseOpportunities, analyzeLead } from './services/geminiService';
+import { isSupabaseConfigured } from './services/supabaseClient';
+import { getWatchlist, addToWatchlist, removeFromWatchlist, saveOpportunities } from './services/supabaseService';
 import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
 
 const MOCK_TRENDS = [
@@ -46,11 +49,25 @@ const App: React.FC = () => {
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [outreachLead, setOutreachLead] = useState<Opportunity | null>(null);
 
   useEffect(() => {
     checkKeyStatus();
     handleSearch();
+    loadWatchlistFromSupabase();
   }, []);
+
+  const loadWatchlistFromSupabase = async () => {
+    if (!isSupabaseConfigured()) return;
+    try {
+      const watchlist = await getWatchlist();
+      if (watchlist.length > 0) {
+        setSavedLeads(watchlist);
+      }
+    } catch (e) {
+      // Silently fail - local state still works
+    }
+  };
 
   const checkKeyStatus = async () => {
     const aistudio = (window as any).aistudio;
@@ -99,17 +116,29 @@ const App: React.FC = () => {
   };
 
   const toggleSave = (opp: Opportunity) => {
-    setSavedLeads(prev => 
-      prev.find(i => i.id === opp.id) 
-        ? prev.filter(i => i.id !== opp.id) 
+    const isSaved = savedLeads.find(i => i.id === opp.id);
+    setSavedLeads(prev =>
+      isSaved
+        ? prev.filter(i => i.id !== opp.id)
         : [...prev, opp]
     );
+    if (isSupabaseConfigured()) {
+      if (isSaved) {
+        removeFromWatchlist(opp.id);
+      } else {
+        saveOpportunities([opp]).then(() => addToWatchlist(opp.id));
+      }
+    }
+  };
+
+  const handleOutreach = (opp: Opportunity) => {
+    setOutreachLead(opp);
   };
 
   const providers: ProviderConfig[] = [
     { id: 'gemini', name: 'Google Gemini', status: hasGeminiKey ? 'connected' : 'disconnected', description: 'Supports Search & Maps Grounding. Recommended for Lead Discovery.', type: 'intelligence' },
     { id: 'ralph', name: 'Ralph (OS)', status: 'connected', description: 'Integration with snarktank/ralph for specialized QS document processing.', type: 'tool' },
-    { id: 'supabase', name: 'Supabase', status: 'disconnected', description: 'Scalable PostgreSQL database to store and query your project leads.', type: 'database' },
+    { id: 'supabase', name: 'Supabase', status: isSupabaseConfigured() ? 'connected' : 'disconnected', description: 'Scalable PostgreSQL database to store and query your project leads.', type: 'database' },
     { id: 'google-file-search', name: 'Google File Search', status: 'disconnected', description: 'Search and sync project documentation via Google Drive.', type: 'database' },
     { id: 'openai', name: 'OpenAI GPT-4o', status: 'upcoming', description: 'Advanced reasoning for contract analysis and value engineering.', type: 'intelligence' },
     { id: 'openrouter', name: 'OpenRouter', status: 'upcoming', description: 'Access to Llama 3 and Claude via a single interface.', type: 'intelligence' },
@@ -237,11 +266,12 @@ const App: React.FC = () => {
             ))
           ) : (
             opportunities.slice(0, 3).map((opp) => (
-              <OpportunityCard 
-                key={opp.id} 
-                opportunity={opp} 
-                onAnalyze={handleAnalyze} 
+              <OpportunityCard
+                key={opp.id}
+                opportunity={opp}
+                onAnalyze={handleAnalyze}
                 onSave={toggleSave}
+                onOutreach={handleOutreach}
                 isSaved={!!savedLeads.find(i => i.id === opp.id)}
               />
             ))
@@ -458,6 +488,7 @@ const App: React.FC = () => {
                     opportunity={opp}
                     onAnalyze={handleAnalyze}
                     onSave={toggleSave}
+                    onOutreach={handleOutreach}
                     isSaved={!!savedLeads.find(i => i.id === opp.id)}
                   />
                 ))
@@ -480,11 +511,12 @@ const App: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {savedLeads.length > 0 ? (
                 savedLeads.map((opp) => (
-                  <OpportunityCard 
-                    key={opp.id} 
-                    opportunity={opp} 
-                    onAnalyze={handleAnalyze} 
+                  <OpportunityCard
+                    key={opp.id}
+                    opportunity={opp}
+                    onAnalyze={handleAnalyze}
                     onSave={toggleSave}
+                    onOutreach={handleOutreach}
                     isSaved={true}
                   />
                 ))
@@ -504,7 +536,7 @@ const App: React.FC = () => {
         {view === ViewMode.SETTINGS && renderAdmin()}
 
         {selectedLead && (
-          <AnalysisModal 
+          <AnalysisModal
             opportunity={selectedLead}
             analysis={analysis}
             loading={isAnalyzing}
@@ -512,6 +544,13 @@ const App: React.FC = () => {
               setSelectedLead(null);
               setAnalysis(null);
             }}
+          />
+        )}
+
+        {outreachLead && (
+          <OutreachPanel
+            opportunity={outreachLead}
+            onClose={() => setOutreachLead(null)}
           />
         )}
       </main>
