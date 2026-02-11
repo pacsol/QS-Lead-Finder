@@ -18,7 +18,7 @@ import LoginPage from './components/LoginPage';
 import { Opportunity, AnalysisResult, ViewMode, AIProvider, ProviderConfig } from './types';
 import { findOpportunities, parseOpportunities, analyzeLead } from './services/geminiService';
 import { isSupabaseConfigured, supabase } from './services/supabaseClient';
-import { getWatchlist, addToWatchlist, removeFromWatchlist, saveOpportunities } from './services/supabaseService';
+import { getOpportunities, getWatchlist, addToWatchlist, removeFromWatchlist, saveOpportunities } from './services/supabaseService';
 
 const App: React.FC = () => {
   const [view, setView] = useState<ViewMode>(ViewMode.DASHBOARD);
@@ -59,7 +59,25 @@ const App: React.FC = () => {
     checkKeyStatus();
     handleSearch();
     loadWatchlistFromSupabase();
+    loadOpportunitiesFromSupabase();
   }, []);
+
+  const loadOpportunitiesFromSupabase = async () => {
+    if (!isSupabaseConfigured()) return;
+    try {
+      const dbOpps = await getOpportunities();
+      if (dbOpps.length > 0) {
+        setOpportunities(prev => {
+          const map = new Map<string, Opportunity>();
+          dbOpps.forEach(o => map.set(o.id, o));
+          prev.forEach(o => map.set(o.id, o));
+          return Array.from(map.values());
+        });
+      }
+    } catch (e) {
+      // Silently fail - search results still work
+    }
+  };
 
   const loadWatchlistFromSupabase = async () => {
     if (!isSupabaseConfigured()) return;
@@ -96,7 +114,15 @@ const App: React.FC = () => {
       const results = await findOpportunities(location, sector);
       setSearchSources(results.sources || []);
       const parsedLeads = await parseOpportunities(results.text);
-      setOpportunities(parsedLeads);
+      setOpportunities(prev => {
+        const map = new Map<string, Opportunity>();
+        prev.forEach(o => map.set(o.id, o));
+        parsedLeads.forEach(o => map.set(o.id, o));
+        return Array.from(map.values());
+      });
+      if (isSupabaseConfigured()) {
+        saveOpportunities(parsedLeads);
+      }
     } catch (error) {
       console.error("Search failed:", error);
       setSearchError(error instanceof Error ? error.message : "Search failed. Please check your API key and try again.");
