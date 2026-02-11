@@ -38,3 +38,65 @@ create table if not exists proposals (
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
+
+-- CRM Tables
+
+create table if not exists crm_companies (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  industry text default '',
+  website text default '',
+  address text default '',
+  phone text default '',
+  notes text default '',
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create table if not exists crm_contacts (
+  id uuid primary key default gen_random_uuid(),
+  first_name text not null,
+  last_name text not null,
+  email text default '',
+  phone text default '',
+  company_id uuid references crm_companies(id) on delete set null,
+  job_title text default '',
+  tags jsonb default '[]',
+  notes text default '',
+  linked_opportunity_ids jsonb default '[]',
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create table if not exists pipeline_stages (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  color text not null default 'slate',
+  position integer not null default 0,
+  created_at timestamptz default now()
+);
+
+create table if not exists pipeline_deals (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  value text default '',
+  contact_id uuid not null references crm_contacts(id) on delete cascade,
+  company_id uuid references crm_companies(id) on delete set null,
+  stage_id uuid not null references pipeline_stages(id) on delete cascade,
+  opportunity_id uuid references opportunities(id) on delete set null,
+  probability integer default 0 check (probability >= 0 and probability <= 100),
+  expected_close_date text default '',
+  notes text default '',
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create table if not exists crm_activities (
+  id uuid primary key default gen_random_uuid(),
+  contact_id uuid not null references crm_contacts(id) on delete cascade,
+  deal_id uuid references pipeline_deals(id) on delete set null,
+  type text not null check (type in ('note', 'call', 'email', 'meeting', 'task', 'deal_moved', 'contact_created')),
+  title text not null,
+  description text default '',
+  created_at timestamptz default now()
+);

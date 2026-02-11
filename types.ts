@@ -121,3 +121,77 @@ export const PROPOSAL_SECTIONS: { key: ProposalSectionKey; label: string }[] = [
   { key: 'teamBios', label: 'Team Bios' },
   { key: 'termsAndConditions', label: 'Terms & Conditions' },
 ];
+
+// --- CRM Types ---
+
+export interface CRMContact {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  companyId: string | null;
+  jobTitle: string;
+  tags: string[];
+  notes: string;
+  linkedOpportunityIds: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CRMCompany {
+  id: string;
+  name: string;
+  industry: string;
+  website: string;
+  address: string;
+  phone: string;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PipelineStage {
+  id: string;
+  name: string;
+  color: string;
+  position: number;
+  createdAt: string;
+}
+
+export interface PipelineDeal {
+  id: string;
+  title: string;
+  value: string;
+  contactId: string;
+  companyId: string | null;
+  stageId: string;
+  opportunityId: string | null;
+  probability: number;
+  expectedCloseDate: string;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CRMActivity {
+  id: string;
+  contactId: string;
+  dealId: string | null;
+  type: ActivityType;
+  title: string;
+  description: string;
+  createdAt: string;
+}
+
+export type ActivityType = 'note' | 'call' | 'email' | 'meeting' | 'task' | 'deal_moved' | 'contact_created';
+export type CRMSubView = 'contacts' | 'companies' | 'pipeline' | 'activities';
+
+export const DEFAULT_PIPELINE_STAGES: Omit<PipelineStage, 'id' | 'createdAt'>[] = [
+  { name: 'Lead', color: 'slate', position: 0 },
+  { name: 'Qualified', color: 'blue', position: 1 },
+  { name: 'Proposal Sent', color: 'amber', position: 2 },
+  { name: 'Negotiation', color: 'purple', position: 3 },
+  { name: 'Won', color: 'emerald', position: 4 },
+  { name: 'Lost', color: 'red', position: 5 },
+];

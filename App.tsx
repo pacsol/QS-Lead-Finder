@@ -12,6 +12,7 @@ import OpportunityCard from './components/OpportunityCard';
 import AnalysisModal from './components/AnalysisModal';
 import OutreachPanel from './components/OutreachPanel';
 import ProposalGenerator from './components/ProposalGenerator';
+import CRMView from './components/CRMView';
 import LoginPage from './components/LoginPage';
 import { Opportunity, AnalysisResult, ViewMode, AIProvider, ProviderConfig } from './types';
 import { findOpportunities, parseOpportunities, analyzeLead } from './services/geminiService';
@@ -502,16 +503,7 @@ const App: React.FC = () => {
         )}
 
         {view === ViewMode.CRM && (
-          <div className="flex items-center justify-center py-32 animate-in fade-in duration-500">
-            <div className="text-center">
-              <div className="mx-auto w-20 h-20 bg-purple-50 rounded-full flex items-center justify-center mb-6 text-purple-500">
-                <Users size={40} />
-              </div>
-              <h3 className="text-2xl font-bold text-slate-900 mb-2">Client Relationship Manager</h3>
-              <p className="text-slate-500 max-w-md">Track client interactions, manage contacts, and nurture relationships with a CRM built for quantity surveyors.</p>
-              <span className="inline-block mt-6 text-xs font-bold text-purple-600 bg-purple-50 px-4 py-2 rounded-full uppercase tracking-widest">Coming Soon</span>
-            </div>
-          </div>
+          <CRMView opportunities={opportunities} savedLeads={savedLeads} />
         )}
 
         {view === ViewMode.EMAIL_SEQUENCES && (
