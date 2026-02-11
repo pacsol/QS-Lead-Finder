@@ -91,6 +91,20 @@ create table if not exists pipeline_deals (
   updated_at timestamptz default now()
 );
 
+-- Email Campaigns
+
+create table if not exists email_campaigns (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  status text not null default 'draft'
+    check (status in ('draft', 'active', 'paused', 'completed')),
+  opportunity_id uuid references opportunities(id) on delete set null,
+  linked_contact_ids jsonb default '[]',
+  steps jsonb not null default '[]',
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
 create table if not exists crm_activities (
   id uuid primary key default gen_random_uuid(),
   contact_id uuid not null references crm_contacts(id) on delete cascade,

@@ -187,6 +187,21 @@ export interface CRMActivity {
 export type ActivityType = 'note' | 'call' | 'email' | 'meeting' | 'task' | 'deal_moved' | 'contact_created';
 export type CRMSubView = 'contacts' | 'companies' | 'pipeline' | 'activities';
 
+// --- Email Campaign Types ---
+
+export type CampaignStatus = 'draft' | 'active' | 'paused' | 'completed';
+
+export interface EmailCampaign {
+  id: string;
+  name: string;
+  status: CampaignStatus;
+  opportunityId: string | null;
+  linkedContactIds: string[];
+  steps: EmailStep[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const DEFAULT_PIPELINE_STAGES: Omit<PipelineStage, 'id' | 'createdAt'>[] = [
   { name: 'Lead', color: 'slate', position: 0 },
   { name: 'Qualified', color: 'blue', position: 1 },

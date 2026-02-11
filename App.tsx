@@ -4,7 +4,7 @@ import {
   Search as SearchIcon, MapPin, TrendingUp, Bell, Filter, Grid,
   List as ListIcon, Lightbulb, Key, ShieldCheck, Database as DbIcon,
   ExternalLink, CheckCircle2, XCircle, Globe, Cpu, Zap, Bookmark,
-  Github, Database, FileSearch, HardDrive, LogOut, FileText, Users, Mail
+  Github, Database, FileSearch, HardDrive, LogOut, FileText, Users
 } from 'lucide-react';
 import { Session } from '@supabase/supabase-js';
 import Sidebar from './components/Sidebar';
@@ -13,6 +13,7 @@ import AnalysisModal from './components/AnalysisModal';
 import OutreachPanel from './components/OutreachPanel';
 import ProposalGenerator from './components/ProposalGenerator';
 import CRMView from './components/CRMView';
+import EmailSequencesView from './components/EmailSequencesView';
 import LoginPage from './components/LoginPage';
 import { Opportunity, AnalysisResult, ViewMode, AIProvider, ProviderConfig } from './types';
 import { findOpportunities, parseOpportunities, analyzeLead } from './services/geminiService';
@@ -507,16 +508,7 @@ const App: React.FC = () => {
         )}
 
         {view === ViewMode.EMAIL_SEQUENCES && (
-          <div className="flex items-center justify-center py-32 animate-in fade-in duration-500">
-            <div className="text-center">
-              <div className="mx-auto w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mb-6 text-amber-500">
-                <Mail size={40} />
-              </div>
-              <h3 className="text-2xl font-bold text-slate-900 mb-2">Email Sequences</h3>
-              <p className="text-slate-500 max-w-md">Design automated multi-step email campaigns to engage leads at scale with personalised outreach sequences.</p>
-              <span className="inline-block mt-6 text-xs font-bold text-amber-600 bg-amber-50 px-4 py-2 rounded-full uppercase tracking-widest">Coming Soon</span>
-            </div>
-          </div>
+          <EmailSequencesView opportunities={opportunities} savedLeads={savedLeads} />
         )}
 
         {view === ViewMode.SETTINGS && renderAdmin()}
